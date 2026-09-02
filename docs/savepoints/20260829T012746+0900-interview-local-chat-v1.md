@@ -1,0 +1,128 @@
+# Savepoint: 면접용_로컬_챗_v1
+
+- **Profile:** standard
+- **Status:** validated-release-candidate
+- **Created:** 2026-08-29T01:27:46+09:00
+- **Checkpoint digest:** `58247f0e2b87902fb6cd4d134ecaad80b5509fcec113d199a2cef67343873a5a`
+- **Immediate next step:** 검증된 main 커밋과 v1.0.0 태그를 비공개 GitHub 저장소에 게시한다.
+
+## Confirmed branch review
+
+- **User confirmed:** True
+- **Confirmation:** 사용자는 현재 상태를 면접용_로컬_챗_v1로 정의해 저장하고 GitHub에 올려 각 수신자가 자기 계정으로 쓰게 하라고 요청했으며, GitHub 플러그인 사용을 명시했다.
+- **Confirmed structure:** 기존 app, public, scripts, tests, docs 구조와 내부 origin을 보존하고 루트 실행기, README, AGENTS.md, docs/savepoints 연속성 파일만 추가한다. 파일 이동, 이름 변경, 삭제 또는 공개 호스팅은 하지 않는다.
+- **Approved changes:**
+  - 면접용_로컬_챗_v1 제품 메타데이터와 실행 문서를 추가한다.
+  - 로컬 인증 토큰, Origin 검증, 자동 실행기를 추가한다.
+  - 검증된 상태를 세이브포인트와 Git 커밋 및 태그로 보존한다.
+  - GitHub 플러그인에서 확인한 비공개 빈 저장소에 게시한다.
+
+## Objective
+
+CREAI+IT 최종 360도 메탈 엠블럼과 GPT-5.6 Luna를 결합한 로컬 전용 브라우저 챗봇을 각 사용자의 ChatGPT 계정으로 실행할 수 있게 보존하고 공유한다.
+
+## Why this savepoint matters
+
+면접용으로 검증된 디자인과 동작을 잃지 않으면서도 공유자의 인증 정보를 노출하지 않고 다른 사용자가 자기 계정으로 동일한 환경을 재현할 수 있어야 한다.
+
+## Confirmed state
+
+- 제품 식별자는 면접용_로컬_챗_v1이며 package 이름은 interview-local-chat-v1, 버전은 1.0.0이다.
+- /logo-concept 경로에 CREAI+IT 최종 360도 회전 메탈 엠블럼과 앞뒤 입체 처리가 보존되어 있다.
+- 모델은 gpt-5.6-luna로 명시적으로 고정되어 있으며 사용할 수 없는 계정에서는 다른 모델로 전환하지 않고 오류를 표시한다.
+- 앱은 account/read로 현재 사용자의 로컬 Codex 계정을 읽고, 미로그인 사용자는 account/login/start의 ChatGPT 브라우저 인증을 시작한다.
+- 사이트와 WebSocket 서비스는 loopback에만 바인딩되고 app-server는 실행 시 생성되는 capability token을 요구하며 브라우저 브리지는 허용 Origin을 검증한다.
+- 2026-08-29 KST 기준 npm test 4/4 통과, npm run lint 통과, /logo-concept HTTP 200, Luna 실연결 LUNA-LIVE가 확인되었다.
+- 2026-08-29 KST 기준 악성 Origin은 403, 토큰 없는 app-server 접속은 401로 거부되었다.
+- 2026-08-29 KST 기준 npm audit --omit=dev는 취약점 0건이다.
+- GitHub 플러그인으로 changseokmid-cell 계정과 쓰기 가능한 비공개 빈 저장소 changseokmid-cell/CREAITIT_A-1을 확인했다.
+
+## Verified metrics
+
+- **release_version:** 1.0.0
+- **tests_passed:** 4
+- **tests_failed:** 0
+- **lint_errors:** 0
+- **http_status:** 200
+- **luna_smoke_response:** LUNA-LIVE
+- **blocked_origin_status:** 403
+- **missing_token_status:** 401
+- **production_dependency_vulnerabilities:** 0
+- **full_audit_moderate_vulnerabilities:** 4
+- **full_audit_high_vulnerabilities:** 0
+
+## Decisions to preserve
+
+- GitHub 플러그인이 새 저장소 생성이나 이름 변경을 지원하지 않으므로 확인된 비공개 빈 저장소 CREAITIT_A-1을 공유 대상으로 사용한다.
+- 기존 내부 origin은 보존하고 GitHub 저장소는 별도 github remote로 추가한다.
+- 공용 API 키나 공유자 계정은 사용하지 않고 수신자가 자기 ChatGPT 계정으로 인증한다.
+- 실행은 로컬 전용으로 유지하며 공개 Sites 호스팅이나 인터넷 노출을 하지 않는다.
+- Windows 공유 사용자는 START_INTERVIEW_CHAT.cmd 하나로 최초 설치, 서비스 시작, 브라우저 열기를 수행한다.
+- 기존 START_LUNA.cmd는 하위 호환 진입점으로 유지한다.
+
+## Known limitations
+
+- 사용자 계정에 GPT-5.6 Luna 권한이 있어야 하며 모델 권한은 저장소 접근 권한과 별개다.
+- Codex app-server WebSocket 전송은 실험적 기능이므로 로컬 면접과 데모 범위를 벗어난 서비스 배포에 사용하지 않는다.
+- 최초 실행에는 Node.js 22.13 이상과 npm 의존성 설치 및 ChatGPT 로그인을 위한 네트워크가 필요하다.
+- 전체 npm audit에는 사용하지 않는 Drizzle DB 생성 도구 계층의 중간 등급 권고 4건이 남아 있으나 챗봇 실행 의존성 감사에는 취약점이 없다.
+- 세이브포인트는 파일 무결성 기록이며 물리적 백업이 아니므로 원본 로고 자산과 GitHub 저장소는 별도로 보존해야 한다.
+- GitHub 저장소 이름 CREAITIT_A-1은 제품명 면접용_로컬_챗_v1과 다르다.
+
+## Next steps
+
+- 검증된 main 커밋과 v1.0.0 태그를 비공개 GitHub 저장소에 게시한다.
+- GitHub Collaborators에서 실제 공유 대상만 초대한다.
+- 다른 컴퓨터와 다른 ChatGPT 계정으로 fresh clone 최초 실행을 확인한다.
+
+## Resume checklist
+
+- AGENTS.md, SAVEPOINT.md, docs/savepoints/latest.json을 읽는다.
+- savepoint.py verify로 기록된 핵심 파일의 해시가 MATCH인지 확인한다.
+- git status와 github remote를 확인하고 사용자 변경을 보존한다.
+- npm ci 후 npm test와 npm run lint를 실행한다.
+- START_INTERVIEW_CHAT.cmd 또는 npm run local:open으로 실행한 뒤 /logo-concept, LUNA-LIVE, 401/403 보안 게이트를 확인한다.
+
+## Artifact manifest
+
+- `AGENTS.md` — 946 bytes — SHA-256 `552b79a6cf66741bceb80e229e17676cdb76da5d6547620a0855cee577d16a7a`
+- `README.md` — 3566 bytes — SHA-256 `e95a4a5196e1094b917b483eeda5631462c864c03d5a4f98a3c5606780582b1d`
+- `app/page.tsx` — 39793 bytes — SHA-256 `2d8104b7abceca52e20e5786e1ccfb712a4b0fefb6bdd45a5a4cb9c8c6e9d39a`
+- `app/logo-concept.css` — 5686 bytes — SHA-256 `55705b450bce2134c99240b3fad96c3d49642307e3f0517fa425ba7ad32fbdac`
+- `app/logo-concept/page.tsx` — 298 bytes — SHA-256 `d5e7f7b589cff3ff71f50a058831725715ef0c8a0ebca005f63c78a438d0df94`
+- `public/creait-logo-original.png` — 326749 bytes — SHA-256 `91a44686b79442119c95e70144880f4d9ff28c5fdc68482f172d9417a20d3e03`
+- `package.json` — 1879 bytes — SHA-256 `83a3b364f682507a1d5fc3e09837b4a98d7c17151802eb9f1930185e016e4e3a`
+- `package-lock.json` — 411262 bytes — SHA-256 `7e881148f65b25f447c3397304576de6cb1f6ba4911fa8dbbc9675dee2ff2ecd`
+- `scripts/prepare-runtime.mjs` — 196 bytes — SHA-256 `30cdd96657394eebaa5e5a6aa22b389eb1830e99d386218977b4cb4d1248ae7f`
+- `scripts/run-app-server.mjs` — 1018 bytes — SHA-256 `ca772a81ef4c27d45a978278c59974588c2ccc94801172b3d8899d22d311759f`
+- `scripts/luna-proxy.mjs` — 1977 bytes — SHA-256 `05595ba35cb58dba711cd99625363ef3ea28cb33ee44eb6212c21afa7f035bee`
+- `scripts/launch-local.mjs` — 1732 bytes — SHA-256 `2042ae4dbc635d9efd3688740f13f3cd9fb7d5bb2b1d356fc4556b1aa19e5336`
+- `scripts/smoke-luna.mjs` — 2765 bytes — SHA-256 `de68b4a1c76fda4a7b548a43c24ff99c486481fd46ca96954fb8b96918c261df`
+- `START_INTERVIEW_CHAT.cmd` — 890 bytes — SHA-256 `db6857a49cd5e16e73e1296ceec2d1082b121c3b4516d0a9ae2c15acdec4ee0f`
+- `START_LUNA.cmd` — 54 bytes — SHA-256 `e0e601854ac0979c62f2113aca87d4f861b7c3c77e9b740da9bd3f2d5e231fb1`
+- `start-interview-chat.sh` — 570 bytes — SHA-256 `01f3583b345f6c950b80c044bf70754901db349c24bc722f046dbd0883c99e48`
+- `tests/rendered-html.test.mjs` — 5829 bytes — SHA-256 `9dea35386e67daa794351fd8f5701056a8ab2852daf8d44e1d8152cab1d1b0bc`
+- `vite.config.ts` — 1779 bytes — SHA-256 `7871db337c500e4c9e452e3bb49b517a43cab55b389d61ab77206f49a291f6b6`
+
+## Verification commands
+
+- `npm ci`
+- `npm test`
+- `npm run lint`
+- `npm audit --omit=dev --audit-level=low`
+- `npm run local:open`
+- `npm run luna:smoke`
+
+## References
+
+- https://github.com/changseokmid-cell/CREAITIT_A-1
+- https://learn.chatgpt.com/docs/auth
+- https://learn.chatgpt.com/docs/app-server
+
+## Savepoint records
+
+- Historical Markdown: `docs/savepoints/20260829T012746+0900-interview-local-chat-v1.md`
+- Historical JSON: `docs/savepoints/20260829T012746+0900-interview-local-chat-v1.json`
+- Current machine record: `docs/savepoints/latest.json`
+
+Run the `savepoint` skill's `verify` command before relying on artifact equality. A later mismatch means the project changed after this checkpoint; it does not authorize rollback.

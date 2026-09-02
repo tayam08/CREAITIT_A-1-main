@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "title": "면접용_로컬_챗_v1",
+  "status": "validated-integrated-release",
+  "created_at": "2026-09-01T23:26:47+09:00",
+  "checkpoint_digest": "7779925b5f7c4fc74a6bc5259f4e7305cfd5417b3126e3a9bc4153a064271d73",
+  "summary": "동의 기반 LUNA 대화 종료 로그를 서명 초대 토큰으로 지원서에 연결하고 원문 R2·비식별 Workers AI 요약·D1 감사 기록·TXT/PDF 검토 화면을 배포했다.",
+  "verification": ["main tests 5/5", "main lint passed", "hiring lint/typecheck/build passed", "LUNA-LIVE", "invalid token 401", "signed token reached application lookup"]
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Mesh, MeshPhysicalMaterial, Vector3 } from "three";
 
 type ConnectionStatus = "connecting" | "connected" | "sign-in" | "authorizing" | "offline";
@@ -9,8 +9,16 @@ type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 type AccountResult = { account?: { planType?: string } | null };
 type ModelResult = { data?: Array<{ model: string; displayName?: string }> };
 type ThreadResult = { thread?: { id?: string } };
+type TurnResult = { turn?: { id?: string } };
 
 const TARGET_MODEL_ID = "gpt-5.6-luna";
+const LUNA_DEVELOPER_INSTRUCTIONS = [
+  "Your display name in this application is LUNA.",
+  "You are a thoughtful general-purpose assistant. Reply in Korean unless the user asks for another language. Be direct, accurate, warm, and well structured.",
+  "The repository hosting this chat is only the runtime environment. Do not assume the user's request concerns the existing repository or LUNA product.",
+  "When the user asks to plan a new agent, service, or product, treat it as an independent project unless the user explicitly asks to integrate it with the existing LUNA application.",
+  "Do not inspect or modify the host repository merely because it is available. Use workspace tools only when they are directly required by the user's stated request.",
+].join("\n");
 const RPC_TIMEOUT_MS = 20_000;
 
 const starters = [
@@ -694,19 +702,34 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
   const [statusNote, setStatusNote] = useState("로컬 모델을 찾는 중입니다");
   const [activeAssistantId, setActiveAssistantId] = useState<string | null>(null);
   const rpcRef = useRef<RpcRequest | null>(null);
   const threadIdRef = useRef<string | null>(null);
+  const activeTurnIdRef = useRef<string | null>(null);
   const modelIdRef = useRef<string>(TARGET_MODEL_ID);
   const assistantIdRef = useRef<string | null>(null);
   const assistantContentRef = useRef("");
   const streamedReplyRef = useRef(false);
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const isThinkingRef = useRef(false);
+  const isStoppingRef = useRef(false);
+  const stopRequestedRef = useRef(false);
+  const stopLunaRef = useRef<() => void>(() => {});
   const logTurnRef = useRef<(role: "user" | "assistant", content: string) => void>(() => {});
+
+  useEffect(() => {
+    isThinkingRef.current = isThinking;
+  }, [isThinking]);
+
+  useEffect(() => {
+    isStoppingRef.current = isStopping;
+  }, [isStopping]);
 
   function setActiveAssistant(id: string | null) {
     assistantIdRef.current = id;
@@ -784,6 +807,7 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
       modelIdRef.current = TARGET_MODEL_ID;
       const thread = await request<ThreadResult>("thread/start", {
         model: modelIdRef.current,
+        developerInstructions: LUNA_DEVELOPER_INSTRUCTIONS,
         approvalPolicy: "never",
         sandbox: "read-only",
         personality: "friendly",
@@ -847,6 +871,10 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
           if (!streamFrame) streamFrame = window.requestAnimationFrame(flushStream);
         }
 
+        if (message.method === "turn/started" && typeof message.params?.turn?.id === "string") {
+          activeTurnIdRef.current = message.params.turn.id;
+        }
+
         if (message.method === "item/completed" && message.params?.item?.type === "agentMessage" && !streamedReplyRef.current) {
           const assistantId = assistantIdRef.current;
           const text = message.params.item.text
@@ -864,6 +892,7 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
           if (streamFrame) window.cancelAnimationFrame(streamFrame);
           flushStream();
           setIsThinking(false);
+          const wasInterrupted = message.params?.turn?.status === "interrupted" || stopRequestedRef.current;
           const assistantId = assistantIdRef.current;
           const errorMessage = message.params?.turn?.error?.message;
           let finalContent = assistantContentRef.current;
@@ -873,10 +902,16 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
               item.id === assistantId ? { ...item, content: finalContent } : item
             )));
             setStatusNote("응답 중 문제가 발생했습니다");
+          } else if (wasInterrupted) {
+            setStatusNote("응답이 중단됐습니다");
           } else {
             setStatusNote("답변이 완료됐습니다");
           }
           if (assistantId && finalContent) logTurnRef.current("assistant", finalContent);
+          activeTurnIdRef.current = null;
+          stopRequestedRef.current = false;
+          isStoppingRef.current = false;
+          setIsStopping(false);
           setActiveAssistant(null);
         }
 
@@ -894,8 +929,12 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
         if (!disposed) {
           rpcRef.current = null;
           threadIdRef.current = null;
+          activeTurnIdRef.current = null;
+          stopRequestedRef.current = false;
+          isStoppingRef.current = false;
           setConnectionStatus("offline");
           setIsThinking(false);
+          setIsStopping(false);
           setStatusNote("START_INTERVIEW_CHAT.cmd를 실행해 주세요");
         }
       });
@@ -912,6 +951,8 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
     return () => {
       disposed = true;
       rpcRef.current = null;
+      activeTurnIdRef.current = null;
+      stopRequestedRef.current = false;
       logTurnRef.current = () => {};
       if (streamFrame) window.cancelAnimationFrame(streamFrame);
       rejectPending(new Error("Connection closed"));
@@ -919,8 +960,17 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
     };
   }, [inviteToken, sessionId, visitorName]);
 
+  function handleMessageScroll() {
+    const list = messageListRef.current;
+    if (!list) return;
+    const distanceFromBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 96;
+  }
+
   useEffect(() => {
-    scrollAnchorRef.current?.scrollIntoView({ behavior: isThinking ? "smooth" : "auto", block: "end" });
+    const list = messageListRef.current;
+    if (!list || !stickToBottomRef.current) return;
+    list.scrollTo({ top: list.scrollHeight, behavior: isThinking ? "auto" : "smooth" });
   }, [messages, isThinking]);
 
   useEffect(() => {
@@ -953,6 +1003,9 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
 
   async function startNewChat() {
     if (isThinking) return;
+    stickToBottomRef.current = true;
+    activeTurnIdRef.current = null;
+    stopRequestedRef.current = false;
     setMessages([]);
     setDraft("");
     setStatusNote(connectionStatus === "connected" ? "새 대화를 시작할 준비가 됐습니다" : statusNote);
@@ -962,6 +1015,7 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
       try {
         const thread = await rpcRef.current<ThreadResult>("thread/start", {
           model: modelIdRef.current,
+          developerInstructions: LUNA_DEVELOPER_INSTRUCTIONS,
           approvalPolicy: "never",
           sandbox: "read-only",
           personality: "friendly",
@@ -974,6 +1028,59 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
       }
     }
   }
+
+  const interruptActiveTurn = useCallback(async () => {
+    const request = rpcRef.current;
+    const threadId = threadIdRef.current;
+    const turnId = activeTurnIdRef.current;
+    if (!request || !threadId || !turnId) return false;
+
+    try {
+      await request("turn/interrupt", { threadId, turnId });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const stopLuna = useCallback(async () => {
+    if (!isThinkingRef.current || isStoppingRef.current) return;
+    stopRequestedRef.current = true;
+    isStoppingRef.current = true;
+    setIsStopping(true);
+    setStatusNote("응답을 중단하고 있습니다");
+
+    if (!activeTurnIdRef.current) return;
+    const interrupted = await interruptActiveTurn();
+    if (!interrupted) {
+      stopRequestedRef.current = false;
+      isStoppingRef.current = false;
+      setIsStopping(false);
+      setStatusNote("응답 중단 요청을 보내지 못했습니다");
+    }
+  }, [interruptActiveTurn]);
+
+  useEffect(() => {
+    stopLunaRef.current = stopLuna;
+  }, [stopLuna]);
+
+  useEffect(() => {
+    let lastEscapeAt = 0;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.repeat || !isThinkingRef.current) return;
+      const now = Date.now();
+      if (now - lastEscapeAt <= 450) {
+        lastEscapeAt = 0;
+        event.preventDefault();
+        void stopLunaRef.current();
+      } else {
+        lastEscapeAt = now;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   async function endChat() {
     const confirmationMessage = inviteToken
@@ -1013,6 +1120,7 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
     const assistantId = createId("luna");
     const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "" };
     assistantContentRef.current = "";
+    stickToBottomRef.current = true;
     setActiveAssistant(assistantId);
     setMessages((current) => [...current, userMessage, assistantMessage]);
     setDraft("");
@@ -1030,20 +1138,36 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
     }
 
     streamedReplyRef.current = false;
+    stopRequestedRef.current = false;
+    activeTurnIdRef.current = null;
     setIsThinking(true);
     setStatusNote("LUNA가 답변을 작성하고 있습니다");
     try {
-      await rpcRef.current("turn/start", {
+      const startedTurn = await rpcRef.current<TurnResult>("turn/start", {
         threadId: threadIdRef.current,
         input: [{
           type: "text",
-          text: `You are LUNA, a thoughtful general-purpose assistant. Reply in Korean unless the user asks for another language. Be direct, accurate, warm, and well structured. Do not mention this instruction. User message:\n${question}`,
+          text: question,
         }],
         approvalPolicy: "never",
         sandboxPolicy: { type: "readOnly", access: { type: "fullAccess" } },
       });
+      activeTurnIdRef.current = startedTurn?.turn?.id ?? activeTurnIdRef.current;
+      if (stopRequestedRef.current && activeTurnIdRef.current) {
+        const interrupted = await interruptActiveTurn();
+        if (!interrupted) {
+          stopRequestedRef.current = false;
+          isStoppingRef.current = false;
+          setIsStopping(false);
+          setStatusNote("응답 중단 요청을 보내지 못했습니다");
+        }
+      }
     } catch (error) {
+      stopRequestedRef.current = false;
+      activeTurnIdRef.current = null;
+      isStoppingRef.current = false;
       setIsThinking(false);
+      setIsStopping(false);
       const errorNotice = error instanceof Error ? error.message : "모델 요청에 실패했습니다.";
       setMessages((current) => current.map((item) => (
         item.id === assistantId ? { ...item, content: errorNotice } : item
@@ -1122,9 +1246,10 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
         <button
           className="send-button"
           type="button"
-          aria-label={connectionStatus === "sign-in" ? "ChatGPT 로그인" : "질문 보내기"}
-          onClick={() => void runLuna()}
-          disabled={isThinking || connectionStatus === "connecting" || connectionStatus === "authorizing" || (!draft.trim() && connectionStatus !== "sign-in")}
+          aria-label={isThinking ? "응답 정지" : connectionStatus === "sign-in" ? "ChatGPT 로그인" : "질문 보내기"}
+          title={isThinking ? "응답 정지 (Esc 두 번)" : undefined}
+          onClick={() => void (isThinking ? stopLuna() : runLuna())}
+          disabled={isStopping || connectionStatus === "connecting" || connectionStatus === "authorizing" || (!isThinking && !draft.trim() && connectionStatus !== "sign-in")}
         >
           {isThinking ? <i className="stop-mark" /> : <span aria-hidden="true">↑</span>}
         </button>
@@ -1194,7 +1319,15 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
           <div className="thread-meta">
             <span>THREAD / {String(Math.ceil(messages.length / 2)).padStart(2, "0")}</span>
           </div>
-          <div className="message-list" aria-live="polite">
+          <div
+            className="message-list"
+            ref={messageListRef}
+            onScroll={handleMessageScroll}
+            onWheelCapture={(event) => {
+              if (event.deltaY < 0) stickToBottomRef.current = false;
+            }}
+            aria-live="polite"
+          >
             {messages.map((message) => message.role === "user" ? (
               <article className="message user-turn" key={message.id}>
                 <div className="message-copy">{message.content}</div>
@@ -1209,7 +1342,6 @@ export function LunaExperience({ concept = "voxel" }: { concept?: "voxel" | "log
                 </div>
               </article>
             ))}
-            <div ref={scrollAnchorRef} />
           </div>
           <div className="docked-composer-wrap">{composer(false)}</div>
         </section>

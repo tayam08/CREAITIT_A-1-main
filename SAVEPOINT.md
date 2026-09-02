@@ -1,6 +1,6 @@
 # Current Savepoint: 면접용_로컬_챗_v1
 
-- **Status:** validated-integrated-delete-control
+- **Status:** validated-integrated-delete-control-stop-control-admin-scroll
 - **Created:** 2026-09-02T00:01:58+09:00
 - **Checkpoint digest:** `7779925b5f7c4fc74a6bc5259f4e7305cfd5417b3126e3a9bc4153a064271d73`
 - **Immediate next step:** 운영진이 불필요한 테스트 대화 1건에서 삭제 확인창과 화면 갱신을 확인한다.
@@ -16,6 +16,8 @@
 - AI 결과는 요약·관찰 신호·후속 질문만 제공하며 점수나 자동 채용 결정을 만들지 않는다.
 - 지원자 상세 화면은 14일 서명 초대 링크, 세션별 요약, TXT 원문 다운로드, 인쇄/PDF 보기를 제공한다.
 - 지원자 상세 화면의 삭제 버튼은 확인 후 비공개 R2 원문과 D1 대화·요약 메타데이터를 제거하고 감사 로그를 남긴다.
+- 응답 생성 중 정지 버튼과 `Esc` 2회 단축키가 동일한 `turn/interrupt` 경로로 현재 LUNA 턴을 중단한다.
+- 관리자 실시간 폴링 중에는 사용자가 위로 스크롤한 위치를 유지하고, 세션 선택 시에만 대화 끝으로 이동한다.
 - 관리자 채용 사이트는 Cloudflare Access 보호를 유지하고 서명 토큰 수신만 별도 Worker로 분리한다.
 - 사용자 요청에 따라 공개 UI Worker 두 곳이 배포되어 있으나 Luna 실행 서비스 자체는 계속 로컬 장치에서만 동작한다.
 
@@ -27,6 +29,9 @@
 - 로컬 `/logo-concept`, app-server `/readyz`, 관리자 페이지: HTTP 200
 - 실제 GPT-5.6 Luna smoke: `LUNA-LIVE`
 - 채용 수신 Worker: 잘못된 토큰 401, 유효한 서명 토큰은 지원서 조회 단계까지 통과
+- 응답 정지: 실행 중인 턴 ID 추적, `turn/interrupt`, 450ms 이내 `Esc` 2회 단축키, 중복 중단 잠금 구현 및 원격 번들 확인
+- 최신 배포 Worker 버전: `f1cd3577-0178-4ebb-93ba-7adca1e9cb39`
+- 관리자 스크롤 수정 배포 Worker 버전: `7b575557-bf6e-455f-aed0-e90f6808a245`
 - 채용 D1 `luna_conversations` 마이그레이션 적용 완료
 - 원격 채팅 D1 `chat_sessions` 런타임 스키마 적용 완료
 - 채용 삭제 API가 운영 빌드에 포함되었고 lint, TypeScript 검사, Vinext 빌드 및 Sites/Workers 배포가 완료됨
@@ -34,6 +39,7 @@
 ## Deployments
 
 - Chat UI: https://interview-local-chat-v1.atb1135.workers.dev/logo-concept
+- Chat UI 최신 Worker 버전: `7b575557-bf6e-455f-aed0-e90f6808a245`
 - Hiring admin: https://creaiit-people-os.atb1135.workers.dev
 - Hiring private Site: https://creaiit-people-os.atb1135.chatgpt.site
 - Signed ingestion: https://creaiit-people-os-luna-ingest.atb1135.workers.dev/api/integrations/luna/conversations
@@ -56,15 +62,15 @@
 
 ## Artifact manifest
 
-- `app/page.tsx` — 49235 bytes — `ec639589d809597fd80ea0b16c5e7d2939fe1299b8e7e7c8a9b59de8153b72ed`
+- `app/page.tsx` — 54942 bytes — `e32abbca8a74d0bd9dd5e9fda8415431d750aec81d202202fe2b4d5e6ee6068a`
 - `app/api/chat-log/route.ts` — 8511 bytes — `3aa91ab3ff5f272b225f16bbcee4d919d10adf550f2b1f31cac5a6a30487d79e`
 - `db/schema.ts` — 1263 bytes — `3d763e5d6788947a3634cada2e4f0c1f4ecc6c466e0610fdfde1d5d490975e50`
 - `db/index.ts` — 2322 bytes — `3b11bdea1168131d1f5d755c19d773289bfdb963f3d70d3d05e60f246ff77bdb`
 - `scripts/luna-proxy.mjs` — 16184 bytes — `4d76297ea3ea83e2ebdd642bf10aa2f6002d0fe60700337280eadd0c8b2e1c6a`
 - `scripts/luna-admin.mjs` — 13737 bytes — `af6de2d15d9872ad0b09139468fd0165b5b4c930380e5dcc0f6b2f2c037a055c`
-- `app/admin/page.tsx` — 12231 bytes — `a0f76756c57fcc32c9a6ca0de2f56d67a1e56c5234fa538741e301932245dc73`
+- `app/admin/page.tsx` — 12909 bytes — `e44d5887293c6862149950e9d5d50aa4c55d3bb579fdc310074aece5fbb3d387`
 - `README.md` — 8380 bytes — `8de95def52a1fc37dbdee3295687ae42ca4be6428522d7409e12555dc9876201`
-- `tests/rendered-html.test.mjs` — 7671 bytes — `c8338ae874952219aeef98ffa8ed80345c697816db949ed8005cdda39fd2e520`
+- `tests/rendered-html.test.mjs` — 9886 bytes — `7518b2537d22a4be0b7064052205e8c83e212b7efe60959d3a6d65663230944a`
 
 ## Resume checklist
 

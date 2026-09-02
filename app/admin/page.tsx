@@ -92,6 +92,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [statusNote, setStatusNote] = useState("연결 중");
   const threadRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
 
   useEffect(() => {
     if (!key) return;
@@ -169,8 +170,22 @@ export default function AdminPage() {
   const selectedSession = sessionViews.find((session) => session.id === effectiveSessionId) ?? null;
 
   useEffect(() => {
-    threadRef.current?.scrollTo(0, threadRef.current.scrollHeight);
+    const thread = threadRef.current;
+    if (!thread || !stickToBottomRef.current) return;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: "auto" });
   }, [selectedSession]);
+
+  function handleThreadScroll() {
+    const thread = threadRef.current;
+    if (!thread) return;
+    const distanceFromBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 96;
+  }
+
+  function selectSession(id: string) {
+    stickToBottomRef.current = true;
+    setSelectedSessionId(id);
+  }
 
   async function deleteSession(session: SessionView) {
     if (!key) return;
@@ -257,7 +272,7 @@ export default function AdminPage() {
         <nav className="admin-sidebar">
           {sessionViews.map((session) => (
             <div key={session.id} className={`admin-visitor ${session.id === effectiveSessionId ? "active" : ""}`}>
-              <button type="button" className="admin-visitor-select" onClick={() => setSelectedSessionId(session.id)}>
+              <button type="button" className="admin-visitor-select" onClick={() => selectSession(session.id)}>
                 <span className="admin-visitor-name">{session.visitorName}</span>
                 <span className="admin-visitor-meta"><span>{session.messages.length}개 · {session.status === "ended" ? "종료" : "진행 중"}</span><span>{formatTime(session.updatedAt)}</span></span>
               </button>
@@ -266,7 +281,14 @@ export default function AdminPage() {
           ))}
           {sessionViews.length === 0 && <p className="admin-empty">아직 기록된 대화가 없습니다.</p>}
         </nav>
-        <div className="admin-thread" ref={threadRef}>
+        <div
+          className="admin-thread"
+          ref={threadRef}
+          onScroll={handleThreadScroll}
+          onWheelCapture={(event) => {
+            if (event.deltaY < 0) stickToBottomRef.current = false;
+          }}
+        >
           {selectedSession ? (
             <>
               <section className="admin-session-summary">

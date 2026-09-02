@@ -2,7 +2,7 @@
   "schema_version": 2,
   "profile": "standard",
   "title": "면접용_로컬_챗_v1",
-  "status": "validated-integrated-delete-control",
+  "status": "validated-integrated-delete-control-stop-control-admin-scroll",
   "objective": "동의 기반 LUNA 대화 종료 로그를 채용 지원서에 안전하게 연결하고 운영진이 원문·요약·문서를 검토하게 한다.",
   "confirmed_facts": [
     "GPT-5.6 Luna 고정, loopback app-server, capability-token 인증, Origin 검증을 유지한다.",
@@ -11,6 +11,8 @@
     "14일 HMAC 서명 초대 링크가 지원서 ID와 대화 세션을 연결한다.",
     "관리자 사이트는 Cloudflare Access 보호를 유지하고 수신 API만 별도 서명 검증 Worker로 분리한다.",
     "지원자 상세의 삭제 버튼은 확인 후 R2 원문과 D1 대화·요약 메타데이터를 제거하고 운영자 감사 로그를 남긴다."
+    ,"응답 생성 중 정지 버튼과 Esc 2회 단축키가 동일한 turn/interrupt 경로로 현재 LUNA 턴을 중단한다."
+    ,"관리자 실시간 폴링 중에는 사용자가 위로 스크롤한 위치를 유지하고, 세션 선택 시에만 대화 끝으로 이동한다."
   ],
   "metrics": {
     "tests_passed": 5,
@@ -23,9 +25,12 @@
     "signed_invite_application_lookup_status": 404,
     "hiring_build": "passed",
     "hiring_delete_route": "built-and-deployed"
+    ,"stop_control": "turn-interrupt-and-double-escape-deployed",
+    "admin_scroll": "polling-safe-scroll-deployed"
   },
   "deployments": {
     "chat_ui": "https://interview-local-chat-v1.atb1135.workers.dev/logo-concept",
+    "chat_ui_version": "7b575557-bf6e-455f-aed0-e90f6808a245",
     "hiring_admin": "https://creaiit-people-os.atb1135.workers.dev",
     "hiring_private_site": "https://creaiit-people-os.atb1135.chatgpt.site",
     "signed_ingestion": "https://creaiit-people-os-luna-ingest.atb1135.workers.dev/api/integrations/luna/conversations"
@@ -40,15 +45,15 @@
     "삭제 후 D1 기록과 R2 원문이 모두 제거됐는지 운영 로그로 확인한다."
   ],
   "artifacts": [
-    { "path": "app/page.tsx", "bytes": 49235, "sha256": "ec639589d809597fd80ea0b16c5e7d2939fe1299b8e7e7c8a9b59de8153b72ed" },
+    { "path": "app/page.tsx", "bytes": 54942, "sha256": "e32abbca8a74d0bd9dd5e9fda8415431d750aec81d202202fe2b4d5e6ee6068a" },
     { "path": "app/api/chat-log/route.ts", "bytes": 8511, "sha256": "3aa91ab3ff5f272b225f16bbcee4d919d10adf550f2b1f31cac5a6a30487d79e" },
     { "path": "db/schema.ts", "bytes": 1263, "sha256": "3d763e5d6788947a3634cada2e4f0c1f4ecc6c466e0610fdfde1d5d490975e50" },
     { "path": "db/index.ts", "bytes": 2322, "sha256": "3b11bdea1168131d1f5d755c19d773289bfdb963f3d70d3d05e60f246ff77bdb" },
     { "path": "scripts/luna-proxy.mjs", "bytes": 16184, "sha256": "4d76297ea3ea83e2ebdd642bf10aa2f6002d0fe60700337280eadd0c8b2e1c6a" },
     { "path": "scripts/luna-admin.mjs", "bytes": 13737, "sha256": "af6de2d15d9872ad0b09139468fd0165b5b4c930380e5dcc0f6b2f2c037a055c" },
-    { "path": "app/admin/page.tsx", "bytes": 12231, "sha256": "a0f76756c57fcc32c9a6ca0de2f56d67a1e56c5234fa538741e301932245dc73" },
+    { "path": "app/admin/page.tsx", "bytes": 12909, "sha256": "e44d5887293c6862149950e9d5d50aa4c55d3bb579fdc310074aece5fbb3d387" },
     { "path": "README.md", "bytes": 8380, "sha256": "8de95def52a1fc37dbdee3295687ae42ca4be6428522d7409e12555dc9876201" },
-    { "path": "tests/rendered-html.test.mjs", "bytes": 7671, "sha256": "c8338ae874952219aeef98ffa8ed80345c697816db949ed8005cdda39fd2e520" }
+    { "path": "tests/rendered-html.test.mjs", "bytes": 9886, "sha256": "7518b2537d22a4be0b7064052205e8c83e212b7efe60959d3a6d65663230944a" }
   ],
   "_savepoint": {
     "created_at": "2026-09-01T23:26:47+09:00",

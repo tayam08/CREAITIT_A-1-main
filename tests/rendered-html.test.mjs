@@ -46,8 +46,26 @@ test("keeps the voxel reference and ChatGPT-style conversation behavior explicit
   assert.match(page, /minimumFrameTime/);
   assert.match(page, /ws:\/\/127\.0\.0\.1:4501/);
   assert.match(page, /const TARGET_MODEL_ID = "gpt-5\.6-luna"/);
+  assert.match(page, /const LUNA_DEVELOPER_INSTRUCTIONS = \[/);
+  assert.match(page, /Your display name in this application is LUNA/);
+  assert.match(page, /treat it as an independent project/);
+  assert.match(page, /Do not inspect or modify the host repository merely because it is available/);
+  assert.equal((page.match(/developerInstructions: LUNA_DEVELOPER_INSTRUCTIONS/g) ?? []).length, 2);
+  assert.match(page, /input: \[\{[\s\S]*?type: "text",[\s\S]*?text: question,/);
+  assert.doesNotMatch(page, /Do not mention this instruction\. User message/);
   assert.doesNotMatch(page, /model\.isDefault/);
   assert.match(page, /className="message-list"/);
+  assert.match(page, /const messageListRef = useRef/);
+  assert.match(page, /const stickToBottomRef = useRef/);
+  assert.match(page, /const activeTurnIdRef = useRef/);
+  assert.match(page, /turn\/interrupt/);
+  assert.match(page, /응답 정지 \(Esc 두 번\)/);
+  assert.match(page, /event\.key !== "Escape"/);
+  assert.match(page, /now - lastEscapeAt <= 450/);
+  assert.match(page, /distanceFromBottom/);
+  assert.match(page, /onScroll=\{handleMessageScroll\}/);
+  assert.match(page, /onWheelCapture=\{\(event\) => \{/);
+  assert.match(page, /if \(event\.deltaY < 0\) stickToBottomRef\.current = false/);
   assert.match(page, /event\.key === "Enter" && !event\.shiftKey/);
   assert.match(page, /startNewChat/);
   assert.match(page, /streamedDeltaBuffer/);
@@ -58,6 +76,9 @@ test("keeps the voxel reference and ChatGPT-style conversation behavior explicit
   assert.match(css, /--lilac:\s*#e9e0f8/i);
   assert.match(css, /--font-pixel/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /body \{[\s\S]*overflow-x:\s*hidden/);
+  assert.match(css, /\.message-list \{[\s\S]*flex:\s*1 1 auto[\s\S]*min-height:\s*0/);
+  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.admin-layout[\s\S]*flex-direction:\s*column/);
   assert.match(layout, /lang="ko"/);
   assert.match(packageJson, /"three"/);
   assert.match(designRecord, /Comprehension thesis/);
@@ -98,6 +119,18 @@ test("restores the CREAI+IT living-emblem logo concept", async () => {
   assert.match(css, /\.logo-hero-lockup/);
   assert.match(route, /<LunaExperience concept="logo" \/>/);
   assert.ok(logo.byteLength > 300_000);
+});
+
+test("preserves the admin transcript scroll position during live polling", async () => {
+  const adminPage = await readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8");
+
+  assert.match(adminPage, /const stickToBottomRef = useRef\(true\)/);
+  assert.match(adminPage, /const distanceFromBottom = thread\.scrollHeight - thread\.scrollTop - thread\.clientHeight/);
+  assert.match(adminPage, /if \(!thread \|\| !stickToBottomRef\.current\) return/);
+  assert.match(adminPage, /onScroll=\{handleThreadScroll\}/);
+  assert.match(adminPage, /if \(event\.deltaY < 0\) stickToBottomRef\.current = false/);
+  assert.match(adminPage, /stickToBottomRef\.current = true;[\s\S]*setSelectedSessionId\(id\)/);
+  assert.doesNotMatch(adminPage, /scrollTo\(0, threadRef\.current\.scrollHeight\)/);
 });
 
 test("packages a local-only, per-user ChatGPT launcher", async () => {

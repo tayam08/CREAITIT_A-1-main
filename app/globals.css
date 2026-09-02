@@ -25,7 +25,7 @@ body {
 }
 
 body {
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -48,8 +48,9 @@ textarea:focus-visible {
 
 .luna-shell {
   position: relative;
-  width: 100vw;
+  width: 100%;
   min-height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   isolation: isolate;
   background:
@@ -556,7 +557,10 @@ textarea:focus-visible {
 .conversation {
   position: relative;
   z-index: 3;
-  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
   padding: 88px 20px 130px;
 }
@@ -584,11 +588,15 @@ textarea:focus-visible {
 }
 
 .message-list {
-  height: calc(100svh - 230px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #c7c6bf transparent;
-  padding: 8px 4px 64px;
+  padding: 8px 4px clamp(160px, 28vh, 300px);
 }
 
 .message {
@@ -833,7 +841,8 @@ textarea:focus-visible {
 
 .admin-gate,
 .admin-shell {
-  height: 100svh;
+  height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   background: #020305;
@@ -914,7 +923,7 @@ textarea:focus-visible {
   width: 200px;
 }
 
-.admin-layout { flex: 1; display: flex; min-height: 0; }
+.admin-layout { flex: 1; display: flex; min-height: 0; min-width: 0; }
 
 .admin-sidebar {
   flex: 0 0 240px;
@@ -973,7 +982,7 @@ textarea:focus-visible {
 
 .admin-empty { padding: 20px; color: #8290a6; font-size: 13px; text-align: center; }
 
-.admin-thread { flex: 1; overflow-y: auto; padding: 20px 24px 40px; }
+.admin-thread { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding: 20px 24px 40px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 
 .admin-session-summary {
   display: grid;
@@ -1040,3 +1049,66 @@ textarea:focus-visible {
 .admin-row.assistant .admin-role { background: rgba(122, 209, 158, .16); color: #7ad19e; }
 
 .admin-content { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #dfe9f5; }
+
+@media (max-width: 760px) {
+  .admin-header {
+    flex-wrap: wrap;
+    gap: 9px 12px;
+    padding: 13px 14px;
+  }
+
+  .admin-header h1 {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .admin-status {
+    flex: 0 0 auto;
+  }
+
+  .admin-search {
+    flex: 1 1 160px;
+    min-width: 0;
+    width: auto;
+    margin-left: 0;
+  }
+
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    flex: 0 0 auto;
+    max-height: 32dvh;
+    border-right: 0;
+    border-bottom: 1px solid rgba(112, 183, 239, .18);
+  }
+
+  .admin-thread {
+    flex: 1 1 auto;
+    padding: 14px 12px 28px;
+  }
+
+  .admin-session-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .admin-export-actions {
+    grid-column: auto;
+    grid-row: auto;
+    flex-wrap: wrap;
+  }
+
+  .admin-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-row-meta {
+    flex-basis: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

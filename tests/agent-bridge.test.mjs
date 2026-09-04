@@ -2,16 +2,17 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-const script = new URL("../scripts/agent-bridge.mjs", import.meta.url);
+const script = fileURLToPath(new URL("../scripts/agent-bridge.mjs", import.meta.url));
 
 test("coordinates Codex and Claude without committing live messages", async (context) => {
   const bridgeDirectory = await mkdtemp(join(tmpdir(), "creaitit-agent-bridge-"));
   context.after(() => rm(bridgeDirectory, { recursive: true, force: true }));
 
-  const run = (...args) => spawnSync(process.execPath, [script.pathname, ...args], {
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], {
     encoding: "utf8",
     env: { ...process.env, AGENT_BRIDGE_DIR: bridgeDirectory },
   });

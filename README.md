@@ -77,7 +77,11 @@ npm run local:open
    LUNA_REMOTE_LOG_URL=https://<배포 주소>/api/chat-log
    LUNA_REMOTE_LOG_KEY=<운영자가 발급한 키>
    LUNA_HIRING_INGEST_URL=https://<채용 전용 수신 Worker 주소>/api/integrations/luna/conversations
+   LUNA_EXTRA_ALLOWED_ORIGINS=https://<Chat UI 배포 주소>
    ```
+   HR OS의 `열기` 버튼처럼 배포된 Chat UI에서 이 컴퓨터의 로컬 브리지에 접속할 때는
+   `LUNA_EXTRA_ALLOWED_ORIGINS`에 그 Chat UI의 정확한 origin을 등록해야 합니다. 여러 주소는
+   쉼표로 구분하고, 경로나 마지막 `/`는 포함하지 않습니다.
 2. `.env`가 프로젝트 루트에 있는 상태로 평소처럼 실행하면(`npm run local:open` 또는 실행 파일), 그 세션의 대화가 로컬 기록과 동시에 운영자의 원격 저장소로도 전송됩니다.
 3. 관리자 대시보드는 운영자 전용입니다. URL(`.../admin`)과 접속 키는 운영자에게 별도로 문의하세요 — 저장소나 README에는 포함하지 않습니다. 대시보드에서는 이름별로 대화 전체를 보고, 필요하면 특정 사용자의 기록을 삭제할 수 있습니다.
 

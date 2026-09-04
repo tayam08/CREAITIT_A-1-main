@@ -154,11 +154,14 @@ test("packages a local-only, per-user ChatGPT launcher", async () => {
   assert.match(packageJson, /"version": "1\.0\.0"/);
   assert.match(readme, /면접용_로컬_챗_v1/);
   assert.match(readme, /각 사용자의/);
+  assert.match(readme, /LUNA_EXTRA_ALLOWED_ORIGINS/);
   assert.match(proxy, /allowedOrigins/);
   assert.match(proxy, /maxQueuedMessages = 64/);
   assert.match(proxy, /maxPayload: maxPayloadBytes/);
   assert.match(proxy, /Authorization: `Bearer \$\{capabilityToken\}`/);
   assert.match(proxy, /process\.env\.LUNA_REMOTE_LOG_URL\?\.trim\(\) \|\| null/);
+  assert.match(proxy, /process\.loadEnvFile/);
+  assert.match(proxy, /process\.env\.LUNA_EXTRA_ALLOWED_ORIGINS/);
   assert.match(proxy, /CREATE TABLE IF NOT EXISTS chat_sessions/);
   assert.match(proxy, /CREATE TABLE IF NOT EXISTS chat_outbox/);
   assert.match(proxy, /chat\/session\/end/);

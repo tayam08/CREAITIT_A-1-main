@@ -1,8 +1,12 @@
 import { WebSocket } from "ws";
+import { ensureRuntimeToken } from "./runtime-token.mjs";
 
 const TARGET_MODEL_ID = "gpt-5.6-luna";
+const capabilityToken = await ensureRuntimeToken();
 
-const socket = new WebSocket("ws://127.0.0.1:4501", { headers: { Origin: "http://localhost:3000" } });
+const socket = new WebSocket("ws://127.0.0.1:4500", {
+  headers: { Authorization: `Bearer ${capabilityToken}` },
+});
 const pending = new Map();
 let nextId = 1;
 let threadId = null;
@@ -31,7 +35,7 @@ socket.addEventListener("message", async (event) => {
     if (message.params?.turn?.error) throw new Error(message.params.turn.error.message);
     clearTimeout(timeoutId);
     console.log(answer.trim());
-    socket.close();
+    socket.terminate();
   }
 });
 
@@ -70,7 +74,7 @@ socket.addEventListener("error", () => {
 const timeoutId = setTimeout(() => {
   if (socket.readyState !== WebSocket.CLOSED) {
     console.error("Timed out waiting for the model response.");
-    socket.close();
+    socket.terminate();
     process.exitCode = 1;
   }
 }, 90000);

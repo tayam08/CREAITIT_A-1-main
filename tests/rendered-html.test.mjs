@@ -134,12 +134,13 @@ test("preserves the admin transcript scroll position during live polling", async
 });
 
 test("packages a local-only, per-user ChatGPT launcher", async () => {
-  const [packageJson, readme, proxy, localAdmin, appServer, runtimeToken, launcher, windowsLauncher, gitignore, viteConfig, layout, chatLogRoute, chatPage] = await Promise.all([
+  const [packageJson, readme, proxy, localAdmin, appServer, smokeTest, runtimeToken, launcher, windowsLauncher, gitignore, viteConfig, layout, chatLogRoute, chatPage] = await Promise.all([
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../README.md", import.meta.url), "utf8"),
     readFile(new URL("../scripts/luna-proxy.mjs", import.meta.url), "utf8"),
     readFile(new URL("../scripts/luna-admin.mjs", import.meta.url), "utf8"),
     readFile(new URL("../scripts/run-app-server.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/smoke-luna.mjs", import.meta.url), "utf8"),
     readFile(new URL("../scripts/runtime-token.mjs", import.meta.url), "utf8"),
     readFile(new URL("../scripts/launch-local.mjs", import.meta.url), "utf8"),
     readFile(new URL("../START_INTERVIEW_CHAT.cmd", import.meta.url), "utf8"),
@@ -170,6 +171,9 @@ test("packages a local-only, per-user ChatGPT launcher", async () => {
   assert.match(localAdmin, /PDF 저장 \/ 인쇄/);
   assert.match(appServer, /"--ws-auth"/);
   assert.match(appServer, /"capability-token"/);
+  assert.match(smokeTest, /ws:\/\/127\.0\.0\.1:4500/);
+  assert.match(smokeTest, /Authorization: `Bearer \$\{capabilityToken\}`/);
+  assert.doesNotMatch(smokeTest, /127\.0\.0\.1:4501/);
   assert.match(runtimeToken, /randomBytes\(48\)/);
   assert.match(launcher, /http:\/\/localhost:3000\/logo-concept/);
   assert.match(windowsLauncher, /npm ci/);
